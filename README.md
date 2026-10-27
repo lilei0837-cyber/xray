@@ -1,4 +1,45 @@
-# Xray VLESS + REALITY 一键部署
+# Xray 一键部署：VLESS + REALITY / VMess + TCP
+
+两个脚本均用于全新 Ubuntu 22.04 / 24.04（x86_64 或 aarch64），监听 TCP 443。**按需选一个部署**；不会把已有节点转换为另一个协议，也不能用这两个首次安装脚本在同一台服务器重复安装。
+
+## VMess + TCP（vmess.sh）
+
+通过 SSH 登录全新服务器，在 Linux 终端执行：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lilei0837-cyber/xray/main/vmess.sh -o vmess.sh && sudo bash vmess.sh
+```
+
+- 核心：Xray；协议：VMess AEAD；传输：TCP；端口：443；客户端 alterId：0；加密：auto。
+- 不启用 TLS、REALITY 或 HTTP 伪装，不需要域名和证书。使用 443 端口不代表启用了 HTTPS。
+- 自动获取公网 IPv4、生成随机 UUID、写入配置、检查配置、启动服务并输出 `vmess://` 连接。
+- 预装 curl，具备 sudo/root 权限，使用 systemd；云安全组应放行入站 TCP 443。
+- 检查已有 Xray、V2Ray、x-ui、sing-box 服务/配置及端口占用；发现冲突时停止，不覆盖原节点。
+- VMess 依赖准确时间。脚本检查系统 NTP 同步状态；未同步时尝试启用系统已有的 NTP 服务并最多等待约 30 秒，失败则停止。客户端也需时间准确。
+- UFW 已启用时放行 TCP 443；不会修改云安全组或其他防火墙。
+- 下载并运行 XTLS 官方安装器，使用当时提供的 Xray 版本；失败后可能保留部分安装，需先检查错误。
+
+再次查看连接：
+
+```bash
+sudo cat /root/xray-vmess-link.txt
+```
+
+配置文件：`/usr/local/etc/xray/config.json`。连接含访问凭据，请勿公开。
+
+### VMess 验证情况
+
+本地执行 `python test_vmess.py`：10 项检查通过，覆盖 Bash/Python 语法、生成配置与链接一致性、随机 UUID、公网 IPv4 校验、已有配置/程序及端口占用保护、时间同步检查。保护逻辑使用隔离片段和模拟命令测试。
+
+测试要求 Python 3 和 Bash；Linux 使用 PATH 中的 bash，Windows 默认使用 Git Bash，可通过 BASH_EXE 指定位置。
+
+尚未在真实 Ubuntu / EC2 上执行完整安装，未验证真实 Xray 配置加载、systemd/UFW 操作或客户端端到端连接。安装过程会执行 Xray 自带配置检查及服务启动检查。
+
+参考：[Xray VMess 文档](https://xtls.github.io/en/config/inbounds/vmess.html)、[v2rayN 分享链接格式](https://github.com/2dust/v2rayN/wiki/Description-of-VMess-share-link)。
+
+---
+
+## VLESS + REALITY（install.sh）
 
 面向全新 Ubuntu 22.04 / 24.04 服务器，支持 x86_64 和 aarch64。使用 VLESS + REALITY + XTLS Vision，TCP 端口固定为 **443**，默认 SNI / 目标为 `www.ibm.com`。
 
